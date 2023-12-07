@@ -9,6 +9,15 @@ const secret = process.env.WEBHOOK_SECRET;
 
 app.use(bodyParser.json());
 
+axios.defaults.headers.common["Content-Type"] = "application/json";
+
+const logError = (err) => {
+  console.error('ERREUR:', err.message);
+  if (err.response) {
+    console.error('ERREUR (PORTAINER API):', err.response.data.message);
+  }
+};
+
 app.post(`/${secret}`, async (req, res) => {
   const apiUrl = process.env.PORTAINER_API_URL;
   const portainerUsername = process.env.PORTAINER_USERNAME;
@@ -16,38 +25,40 @@ app.post(`/${secret}`, async (req, res) => {
   const githubUsername = process.env.GITHUB_USERNAME;
   const githubPassword = process.env.GITHUB_PASSWORD;
 
-  console.log(req.body)
-
-  axios.post(`${apiUrl}/auth`, {
-    username: portainerUsername,
-    password: portainerPassword,
-  }).then(({ data }) => {
-    const token = data.jwt
-    axios.put(
-      `${apiUrl}/stacks/${req.body.stackId ?? 0}/git/redeploy?endpointId=1`,
-      {
-        "prune": false,
-        "pullImage": true,
-        "repositoryAuthentication": true,
-        "repositoryUsername": githubUsername,
-        "repositoryPassword": githubPassword,
-        "repositoryReferenceName": `refs/heads/${req.body.branch}`,
-      }, {
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      },
-    ).catch((err) => {
-      console.error('ERREUR: ' + err.message);
-      console.error('ERREUR: ' + err.response.data.message);
+  try {
+    const portainerResponse = await axios.post(`${apiUrl}/auth`, {
+      username: portainerUsername,
+      password: portainerPassword,
     });
-  }).catch((err) => {
-    console.error('ERREUR: ' + err.message);
-    console.error('ERREUR: ' + err.response.data.message);
-  });
+    const token = portainerResponse.data.jwt;
 
-  res.status(200).send("Webhook received successfully");
+    const stackId = req.body.data.stackId || 0;
+    const ref = req.body.ref || '';
+
+    if (stackId && ref) {
+      await axios.put(
+        `${apiUrl}/stacks/${stackId}/git/redeploy?endpointId=1`,
+        {
+          prune: false,
+          pullImage: true,
+          repositoryAuthentication: true,
+          repositoryUsername: githubUsername,
+          repositoryPassword: githubPassword,
+          repositoryReferenceName: ref,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+    }
+
+    res.status(200).send("Webhook received successfully");
+  } catch (err) {
+    logError(err);
+    res.status(500).send("Internal Server Error");
+  }
 });
 
 app.listen(port, () => {
