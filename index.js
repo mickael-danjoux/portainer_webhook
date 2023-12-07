@@ -16,6 +16,8 @@ app.post(`/${secret}`, async (req, res) => {
   const githubUsername = process.env.GITHUB_USERNAME;
   const githubPassword = process.env.GITHUB_PASSWORD;
 
+  console.log(req.body)
+
   axios.post(`${apiUrl}/auth`, {
     username: portainerUsername,
     password: portainerPassword,
