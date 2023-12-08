@@ -1,14 +1,14 @@
 {
-  "name": "github_webhook",
+  "name": "portainer_github_webhook",
   "version": "1.0.0",
-  "description": "",
+  "description": "Use the Portainer API to force re-pulling a docker image",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node index.js"
   },
-  "author": "sware",
-  "license": "ISC",
+  "author": "Sware <mickael@sware.fr>",
+  "license": "MIT",
   "dependencies": {
     "axios": "^1.6.2",
     "body-parser": "^1.20.2",
